@@ -25,6 +25,7 @@
   (load "spec-impl"))
 
 (defn create-schema [m]
+  (println \newline "CREATE-SCHEMA" m)
   (with-meta (map->Schema
               (assoc m :spec (atom nil)))
     (meta m)))
@@ -196,16 +197,21 @@
 (declare coerce)
 
 (defn satisfy-schema [{:as ent :keys [partition key-mappings coercions]} m]
+  (println \newline "SATISFY-SCHEMA" ent (enum? ent) key-mappings \newline coercions \newline)
   (if (enum? ent)
     (qualify-keyword (:ns ent) m)
     (reduce-kv (clojure.core/fn [e k v]
+                 (println \newline "SATISFY-SCHEMA COERCIONS" coercions)
+                 (println \newline "SATISFY-SCHEMA FN" e k v)
                  (let [k (key-mappings k k)
                        c (coercions k)]
+                   (println \newline "SATISFY-SCHEMA ASSOC" e k v c)
                    (assoc e k (coerce c v))))
                {:db/id (or (:db/id m) (tempid partition))}
                m)))
 
 (defn coerce [c m]
+  (println \newline "COERCE" c m)
   (cond
     (var? c)
       (coerce (var-get c) m)
@@ -230,15 +236,22 @@
            (vary-meta assoc ::schema? true)
            (create-schema)))
      (defn ~(symbol (str "->" name)) [m#]
-       (coerce ~name m#))))
+       (let [rtnval#  (coerce ~name m#)]
+         (println \newline "DEFSCHEMA RTNVAL" rtnval#)
+         rtnval#))))
 
 (defmacro defentity
   {:deprecated "0.1.7"}
   [name & decls]
   `(defschema ~name ~@decls))
 
+(defn- client-conn? [conn]
+  (println "CLIENT-CONN?"   (type conn) (resolve 'datomic.client.impl.shared.Connection))
+  (= (type conn) (resolve 'datomic.client.impl.shared.Connection))
+  )
+
 (defn- peer-conn? [conn]
-  (not (:db-id conn)))
+  (not (client-conn? conn)))
 
 
 (defmacro with-alias [aliases & body]
@@ -253,8 +266,10 @@
                              (ns-names (clojure.core/namespace x)))
                           (let [ns  (clojure.core/namespace x)
                                 ns  (aliases ns ns)
-                                sym (symbol ns (name x))]
-                            `(var-get (resolve '~sym)))
+                                sym (symbol ns (name x))
+                                _ (println "WITH-ALIAS" x ns sym (name x))
+                                _ (println "WITH-ALIAS SYM" (resolve sym))]
+                            `(if (resolve '~sym) (var-get (resolve '~sym))))
 
                         (coll? x)
                           (w x)
@@ -276,12 +291,14 @@
                             [%]
                             (schemas (the-ns %)))
                          schemas-or-nses)
+           _ (println "INSTALL scms" scms)
            peer? (peer-conn? conn)
            trans (if peer?
                    #(deref (d/transact conn %))
                    #(c/transact conn {:tx-data %}))
 
            updated? (clojure.core/fn [tx-data]
+                      (println "UPDATED?" peer? tx-data conn)
                       (let [report (if peer?
                                      (d/with (d/db conn) tx-data)
                                      (c/with (c/with-db conn) {:tx-data tx-data}))]

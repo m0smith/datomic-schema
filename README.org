@@ -1,6 +1,8 @@
 * datomic.schema
   A DSL for [[http://www.datomic.com/][Datomic]] schema definition
 
+  Based upon https://github.com/gfZeng/datomic.schema
+
 ** Installation
 
    [[http://clojars.org/datomic.schema/latest-version.svg]]
