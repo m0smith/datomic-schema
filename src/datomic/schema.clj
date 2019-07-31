@@ -240,12 +240,11 @@
   `(defschema ~name ~@decls))
 
 (defn- client-conn? [conn]
-  (= (type conn) (resolve 'datomic.client.impl.shared.Connection))
-  )
+  (or  (= (type conn) (resolve 'datomic.client.impl.shared.Connection))
+       (= (type conn) (resolve 'datomic.client.impl.local.Connection))))
 
 (defn- peer-conn? [conn]
   (not (client-conn? conn)))
-
 
 (defmacro with-alias [aliases & body]
   (let [names    (map str aliases)
