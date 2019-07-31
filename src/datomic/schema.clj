@@ -239,9 +239,9 @@
   [name & decls]
   `(defschema ~name ~@decls))
 
-(defn- client-conn? [conn] 
+(defn client-conn? [conn] 
   "For debugging, everything is a client conn"
-  conn)
+  true)
 
 (defn- client-conn?-old [conn]
   (or  (= (type conn) (resolve 'datomic.client.impl.shared.Connection))
