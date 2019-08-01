@@ -241,7 +241,7 @@
 
 (defn client-conn? [conn] 
   "For debugging, everything is a client conn"
-  true)
+  (re-find #"datomic.client.api" (str (supers (class conn)))))
 
 (defn- client-conn?-old [conn]
   (or  (= (type conn) (resolve 'datomic.client.impl.shared.Connection))
