@@ -240,8 +240,10 @@
   `(defschema ~name ~@decls))
 
 (defn client-conn? [conn] 
-  "For debugging, everything is a client conn"
-  (re-find #"datomic.client.api" (str (supers (class conn)))))
+  "Check for the client api"
+  (let [ifs (str (supers (class conn)))]
+    (println "CLIENT-CONN?" ifs)
+    (re-find #"datomic.client.api" ifs)))
 
 (defn- client-conn?-old [conn]
   (or  (= (type conn) (resolve 'datomic.client.impl.shared.Connection))
