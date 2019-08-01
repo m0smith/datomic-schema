@@ -243,7 +243,7 @@
   "Check for the client api"
   (let [ifs (str (supers (class conn)))]
     (println "CLIENT-CONN?" ifs)
-    (re-find #"datomic.client.api" ifs)))
+    (re-find #"datomic.client.(api|impl)" ifs)))
 
 (defn- client-conn?-old [conn]
   (or  (= (type conn) (resolve 'datomic.client.impl.shared.Connection))
