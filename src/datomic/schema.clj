@@ -30,12 +30,26 @@
               (assoc m :spec (atom nil)))
     (meta m)))
 
-(def peer?
+
+(defn on-cloud? []
+  "Running on the cloud?  Better use the Client API"
+  (let [env (System/getenv)
+        rtnval (get env "DEPLOYMENT_ID")]
+    rtnval))
+
+
+(defn has-peer-lib? [])
   (try
     (require 'datomic.api)
     true
     (catch Throwable e
-      false)))
+      false))
+
+
+(def peer?
+  (or (not (on-cloud?))
+      (has-peer-lib?))
+)
 
 (if peer?
   (def tempid @(resolve 'datomic.api/tempid))
@@ -242,7 +256,6 @@
 (defn client-conn? [conn] 
   "Check for the client api"
   (let [ifs (str (supers (class conn)))]
-    (println "CLIENT-CONN?" ifs)
     (re-find #"datomic.client.(api|impl)" ifs)))
 
 (defn- client-conn?-old [conn]
