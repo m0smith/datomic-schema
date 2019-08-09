@@ -3,7 +3,8 @@
   (:require [clojure.string :as str]
             [clojure.set :as set]
             [clojure.tools.logging :as log]
-            [clojure.walk :as walk]))
+            [clojure.walk :as walk]
+            [onyx.datomic.api :as api-helper]))
 
 (defrecord Schema [partition ns tx-data
                    key-mappings coercions spec])
@@ -31,25 +32,26 @@
     (meta m)))
 
 
-(defn on-cloud? []
-  "Running on the cloud?  Better use the Client API"
-  (let [env (System/getenv)
-        rtnval (get env "DEPLOYMENT_ID")]
-    rtnval))
+;; (defn on-cloud? []
+;;   "Running on the cloud?  Better use the Client API"
+;;   (let [env (System/getenv)
+;;         rtnval (get env "DEPLOYMENT_ID")]
+;;     rtnval))
 
 
-(defn has-peer-lib? [])
-  (try
-    (require 'datomic.api)
-    true
-    (catch Throwable e
-      false))
+;; (defn has-peer-lib? [])
+;;   (try
+;;     (require 'datomic.api)
+;;     true
+;;     (catch Throwable e
+;;       false))
 
+(def peer? (api-helper/peer?))
 
-(def peer?
-  (or (not (on-cloud?))
-      (has-peer-lib?))
-)
+;; (def peer?
+;;   (or (not (on-cloud?))
+;;       (has-peer-lib?))
+;; )
 
 (if peer?
   (def tempid @(resolve 'datomic.api/tempid))
@@ -253,17 +255,17 @@
   [name & decls]
   `(defschema ~name ~@decls))
 
-(defn client-conn? [conn] 
-  "Check for the client api"
-  (let [ifs (str (supers (class conn)))]
-    (re-find #"datomic.client.(api|impl)" ifs)))
+;; (defn client-conn? [conn] 
+;;   "Check for the client api"
+;;   (let [ifs (str (supers (class conn)))]
+;;     (re-find #"datomic.client.(api|impl)" ifs)))
 
-(defn- client-conn?-old [conn]
-  (or  (= (type conn) (resolve 'datomic.client.impl.shared.Connection))
-       (= (type conn) (resolve 'datomic.client.impl.local.Connection))))
+;; (defn- client-conn?-old [conn]
+;;   (or  (= (type conn) (resolve 'datomic.client.impl.shared.Connection))
+;;        (= (type conn) (resolve 'datomic.client.impl.local.Connection))))
 
-(defn- peer-conn? [conn]
-  (not (client-conn? conn)))
+;; (defn- peer-conn? [conn]
+;;   (not (client-conn? conn)))
 
 (defmacro with-alias [aliases & body]
   (let [names    (map str aliases)
@@ -300,14 +302,13 @@
                             [%]
                             (schemas (the-ns %)))
                          schemas-or-nses)
-           _ (log/debug "INSTALL scms" scms)
-           peer? (peer-conn? conn)
+           ; _ (log/debug "INSTALL scms" scms)
+           ; peer? (peer-conn? conn)
            trans (if peer?
                    #(deref (d/transact conn %))
                    #(c/transact conn {:tx-data %}))
 
            updated? (clojure.core/fn [tx-data]
-                      (log/warn "UPDATED?" peer? tx-data conn)
                       (let [report (if peer?
                                      (d/with (d/db conn) tx-data)
                                      (c/with (c/with-db conn) {:tx-data tx-data}))]

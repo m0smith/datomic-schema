@@ -3,6 +3,11 @@
  :resource-paths #{"resources"}
  :source-paths   #{"src"}
  :dependencies   '[[org.clojure/core.async "0.4.500"     :scope "provided"  :exclusions [org.clojure/clojure]]
+                   [org.onyxplatform/onyx-datomic  "0.14.5.0"
+                    :exclusions [org.onyxplatform/onyx org.clojure/clojure]] ; for client detection
+                   [com.taoensso/timbre "4.10.0"
+                    :exclusions [org.clojure/clojure]] ; needed for onyx-datomic
+
                    [com.datomic/datomic-pro "0.9.5930"
                     :scope "provided"
                     :exclusions [org.clojure/clojure]]
@@ -18,7 +23,7 @@
          '[adzerk.bootlaces :refer :all])
 
 (def project 'com.m0smith/datomic-schema)
-(def +version+ "0.3.03-SNAPSHOT")
+(def +version+ "0.3.05-SNAPSHOT")
 
 (bootlaces! +version+)
 
