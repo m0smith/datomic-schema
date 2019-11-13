@@ -1,5 +1,8 @@
 
 (set-env!
+ #_:repositories  #_[["clojars" {:url "https://clojars.org/repo/"
+                             :username (System/getenv "CLOJARS_USER")
+                             :password (System/getenv "CLOJARS_PASS")}]]
  :resource-paths #{"resources"}
  :source-paths   #{"src"}
  :dependencies   '[[org.clojure/core.async "0.4.500"     :scope "provided"  :exclusions [org.clojure/clojure]]
