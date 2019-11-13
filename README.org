@@ -234,3 +234,10 @@
    - auto resolve dependencies of schemas for installation.
    - generate spec for schemas.
    - simple, no util functions except =schema/install=, [[https://github.com/SparkFund/spec-tacular][spec-tacular]] provide more utilities. IMO, the `datomic.api` is good enough.
+
+** Building and deploying
+   
+   #+begin_src bash
+   export GPG_TTY=$(tty)
+   boot build-jar push-release
+   #end_src
