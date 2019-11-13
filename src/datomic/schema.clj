@@ -217,8 +217,11 @@
     (qualify-keyword (:ns ent) m)
     (reduce-kv (clojure.core/fn [e k v]
                  (let [k (key-mappings k k)
-                       c (coercions k)]
-                   (assoc e k (coerce c v))))
+                       c (coercions k)
+                       new-v (coerce c v)]
+                   (if-not (nil? new-v)
+                     (assoc e k new-v)
+                     e)))
                {:db/id (or (:db/id m) (tempid partition))}
                m)))
 
