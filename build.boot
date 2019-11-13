@@ -5,7 +5,8 @@
                              :password (System/getenv "CLOJARS_PASS")}]]
  :resource-paths #{"resources"}
  :source-paths   #{"src"}
- :dependencies   '[[org.clojure/core.async "0.4.500"     :scope "provided"  :exclusions [org.clojure/clojure]]
+ :dependencies   '[#_[org.clojure/core.async "0.5.527"     :scope "provided"
+                    :exclusions [org.clojure/clojure]]
                    [org.onyxplatform/onyx-datomic  "0.14.5.0"
                     :exclusions [org.onyxplatform/onyx org.clojure/clojure]] ; for client detection
                    [com.taoensso/timbre "4.10.0"
