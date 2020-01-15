@@ -59,11 +59,15 @@
     ([part]    (.toString (java.util.UUID/randomUUID)))
     ([part id] (str id))))
 
-(defn qualify-keyword [ns k]
-  (let [k (keyword k)]
-    (if (or (nil? ns) (clojure.core/namespace k))
-      k
-      (keyword (name ns) (name k)))))
+(defn qualify-keyword 
+  ([ns k] (qualify-keyword ns k false))
+  ([ns k allow-nil?]
+   (let [k (keyword k)]
+     (when (and (not allow-nil?) (nil? k))
+       (throw (ex-info "keyword cannot be nil" {:ns ns :allow-nil? allow-nil?})))
+     (if (or (nil? ns) (nil? k) (clojure.core/namespace k))
+       k
+       (keyword (name ns) (name k))))))
 
 (defn map-keys [f m]
   (reduce-kv #(assoc %1 (f %2) %3) {} m))
@@ -212,30 +216,34 @@
 
 (declare coerce)
 
-(defn satisfy-schema [{:as ent :keys [partition key-mappings coercions]} m]
-  (if (enum? ent)
-    (qualify-keyword (:ns ent) m)
-    (reduce-kv (clojure.core/fn [e k v]
-                 (let [k (key-mappings k k)
-                       c (coercions k)
-                       new-v (coerce c v)]
-                   (if-not (nil? new-v)
-                     (assoc e k new-v)
-                     e)))
-               {:db/id (or (:db/id m) (tempid partition))}
-               m)))
+(defn satisfy-schema 
+  ([s m] (satisfy-schema s m false))
+  ([{:as ent :keys [partition key-mappings coercions]} m allow-nil?]
+   (if (enum? ent)
+     (qualify-keyword (:ns ent) m allow-nil?)
+     (reduce-kv (clojure.core/fn [e k v]
+                  (let [k (key-mappings k k)
+                        c (coercions k)
+                        new-v (coerce c v allow-nil?)]
+                    (if (or allow-nil? (not (nil? new-v)))
+                      (assoc e k new-v)
+                      e)))
+                {:db/id (or (:db/id m) (tempid partition))}
+                m))))
 
-(defn coerce [c m]
-  (cond
-    (var? c)
-      (coerce (var-get c) m)
+(defn coerce 
+  ([c m] (coerce c m false))
+  ([c m allow-nil?]
+   (cond
+     (var? c)
+     (coerce (var-get c) m allow-nil?)
 
-    (schema? c)
-      (if (sequential? m)
-        (map #(satisfy-schema c %) m)
-        (satisfy-schema c m))
+     (schema? c)
+     (if (sequential? m)
+       (map #(satisfy-schema c % allow-nil?) m)
+       (satisfy-schema c m allow-nil?))
 
-    :else m))
+     :else m)))
 
 (defmacro defschema [name & decls]
   `(do
@@ -249,9 +257,12 @@
            (wrap-key-mappings)
            (vary-meta assoc ::schema? true)
            (create-schema)))
-     (defn ~(symbol (str "->" name)) [m#]
-       (let [rtnval#  (coerce ~name m#)]
-         rtnval#))))
+     (defn ~(symbol (str "->" name)) 
+       "allow-nil? is useful for doing upserts"
+       ([m#] (~(symbol (str "->" name)) m# false))
+       ([m# allow-nil?#]
+        (let [rtnval#  (coerce ~name m# allow-nil?#)]
+          rtnval#)))))
 
 (defmacro defentity
   {:deprecated "0.1.7"}
