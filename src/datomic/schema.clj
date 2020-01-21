@@ -231,6 +231,29 @@
                 {:db/id (or (:db/id m) (tempid partition))}
                 m))))
 
+(declare apply-key-mappings)
+
+(defn apply-key-mapping 
+  "Recusively assoc key `k` with value `v` in `acc` using the schema to
+  transaction key name."
+  [{:keys [key-mappings coercions]} acc k v]
+  (let [new-k (key-mappings k k)
+        coercion (coercions new-k)
+        new-v (if (and v (var? coercion))
+            (apply-key-mappings (var-get coercion) v)
+            v)]
+    (assoc acc new-k new-v)))
+
+(defn apply-key-mappings 
+  "Recusively rename keys in `m` to the schema keys."
+  [s m]
+  (cond
+    (nil? m) m
+    (map? m) (reduce-kv (partial apply-key-mapping s) {} m)
+    (vector? m) (mapv #(reduce-kv (partial apply-key-mapping s) {} %) m)
+    (seq m) (map #(reduce-kv (partial apply-key-mapping s) {} %) m)
+    :else m))
+
 (defn coerce 
   ([c m] (coerce c m false))
   ([c m allow-nil?]
