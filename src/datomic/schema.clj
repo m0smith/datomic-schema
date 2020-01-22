@@ -231,6 +231,19 @@
                 {:db/id (or (:db/id m) (tempid partition))}
                 m))))
 
+(defn coerce 
+  ([c m] (coerce c m false))
+  ([c m allow-nil?]
+   (cond
+     (var? c)
+     (coerce (var-get c) m allow-nil?)
+
+     (schema? c)
+     (if (sequential? m)
+       (map #(satisfy-schema c % allow-nil?) m)
+       (satisfy-schema c m allow-nil?))
+     :else m)))
+
 (declare apply-key-mappings)
 
 (defn apply-key-mapping 
@@ -249,24 +262,12 @@
   [s m]
   (cond
     (nil? m) m
+    (and (enum? s) (keyword? m)) (coerce s m)
     (map? m) (reduce-kv (partial apply-key-mapping s) {} m)
     (vector? m) (mapv #(reduce-kv (partial apply-key-mapping s) {} %) m)
     (seq m) (map #(reduce-kv (partial apply-key-mapping s) {} %) m)
     :else m))
 
-(defn coerce 
-  ([c m] (coerce c m false))
-  ([c m allow-nil?]
-   (cond
-     (var? c)
-     (coerce (var-get c) m allow-nil?)
-
-     (schema? c)
-     (if (sequential? m)
-       (map #(satisfy-schema c % allow-nil?) m)
-       (satisfy-schema c m allow-nil?))
-
-     :else m)))
 
 (defmacro defschema [name & decls]
   `(do
